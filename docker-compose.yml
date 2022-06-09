@@ -1,0 +1,51 @@
+version: "3"
+services:
+  zabbix-postgres:
+    image: postgres:alpine
+    networks:
+     - zabbix-net
+    volumes:
+     - /var/lib/zabbix/timezone:/etc/timezone
+     - /var/lib/zabbix/localtime:/etc/localtime
+    environment:
+     - POSTGRES_PASSWORD=zabbix
+     - POSTGRES_USER=zabbix
+
+  zabbix-server:
+    image: zabbix/zabbix-server-pgsql:alpine-latest 
+    networks:
+     - zabbix-net
+    ports:
+     - 10051:10051
+    volumes:
+     - /var/lib/zabbix/timezone:/etc/timezone
+     - /var/lib/zabbix/localtime:/etc/localtime
+    environment:
+     - DB_SERVER_HOST="zabix-postgres"
+     - postges_user="zabbix"
+    depends_on:
+     - zabbix-postgres
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-latest
+    networks:
+     - zabbix-net
+    ports:
+     - 80:8080
+     - 443:8443
+    environment:
+     - DB_SERVER_HOST="zabbix-postgres"
+     - POSTGRES_USER="zabbix"
+     - POSTGRES_PASSWORD="zabbix" 
+     - ZBX_SERVER_HOST="zabbix-server" 
+     - PHP_TZ="Europe/Kiev"
+    volumes:
+     - /var/lib/zabbix/timezone:/etc/timezone
+     - /var/lib/zabbix/localtime:/etc/localtime
+    depends_on:
+     - zabbix-postgres
+
+networks:
+  zabbix-net:
+    external: true
+
